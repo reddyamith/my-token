@@ -183,6 +183,17 @@
   let reviewWindow = 3n * 86400n;
   const agentCache = new Map();
 
+  // Public testnets are nearly empty, but wallets often quote a fee far above what is needed and then
+  // refuse the transaction for "insufficient funds". Quote a realistic fee ourselves.
+  async function fees() {
+    try {
+      const block = await readProvider.getBlock("latest");
+      const base = block?.baseFeePerGas ?? 0n;
+      const tip = ethers.parseUnits("0.01", "gwei");
+      return { maxPriorityFeePerGas: tip, maxFeePerGas: base * 2n + tip };
+    } catch { return {}; }
+  }
+
   function log(msg, isErr) { $("log").textContent = msg; $("log").className = isErr ? "err" : ""; }
   function errText(e) {
     const m = e?.info?.error?.message || e?.shortMessage || e?.reason || e?.message || String(e);
@@ -248,7 +259,7 @@
   async function mint() {
     try {
       log("Minting 100 test USDC… confirm in your wallet.");
-      const tx = await usdcW.mint(account, ethers.parseUnits("100", 6));
+      const tx = await usdcW.mint(account, ethers.parseUnits("100", 6), await fees());
       log(`Sent ${tx.hash}. Waiting…`); await tx.wait();
       log("Minted 100 test USDC."); renderWallet();
     } catch (e) { log(errText(e), true); }
@@ -267,10 +278,10 @@
       const allowance = await usdcW.allowance(account, dep.TaskEscrow);
       if (allowance < payment) {
         log("Step 1 of 2: approve USDC spending… confirm in your wallet.");
-        await (await usdcW.approve(dep.TaskEscrow, payment)).wait();
+        await (await usdcW.approve(dep.TaskEscrow, payment, await fees())).wait();
       }
       log("Step 2 of 2: post the task… confirm in your wallet.");
-      const tx = await escrowW.createTask(dep.USDC, payment, bond, deadline, encodeUri(spec), ethers.ZeroAddress);
+      const tx = await escrowW.createTask(dep.USDC, payment, bond, deadline, encodeUri(spec), ethers.ZeroAddress, await fees());
       log(`Posting… ${tx.hash}`); await tx.wait();
       log("Task posted. An agent will pick it up shortly; the result appears in the list on the right.");
       $("spec").value = "";
@@ -282,7 +293,8 @@
   async function act(fn, id, label, arg) {
     try {
       log(`${label} task #${id}… confirm in your wallet.`);
-      const tx = arg === undefined ? await escrowW[fn](id) : await escrowW[fn](id, arg);
+      const o = await fees();
+      const tx = arg === undefined ? await escrowW[fn](id, o) : await escrowW[fn](id, arg, o);
       log(`Sent ${tx.hash}. Waiting…`); await tx.wait();
       log(`${label} done for task #${id}.`); renderWallet(); refresh();
     } catch (e) { log(errText(e), true); }
