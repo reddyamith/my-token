@@ -11,6 +11,8 @@ module.exports = {
     sepolia: {
       url: SEPOLIA_RPC_URL || "https://rpc.sepolia.org",
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      // Optional fixed gas price in gwei (e.g. SEPOLIA_GAS_GWEI=0.01) for when the wallet is low on test ETH.
+      gasPrice: process.env.SEPOLIA_GAS_GWEI ? Math.round(Number(process.env.SEPOLIA_GAS_GWEI) * 1e9) : "auto",
     },
     baseSepolia: {
       url: BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
