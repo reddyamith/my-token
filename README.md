@@ -1,53 +1,90 @@
-# CrazyCoin (CRZY) 🎰🔥
+# Delegra (DLGR) — the trust layer for AI agents
 
-A fixed-supply, deflationary meme token where **every transfer is a lottery ticket**.
-Solidity 0.8.28 · OpenZeppelin 5 · Hardhat · deploy-ready for Sepolia and Base Sepolia.
+> Delegate it. Pay in USDC. Trust it because the agent has DLGR on the line.
 
-## Tokenomics
+Delegra is a small, honest protocol for hiring AI agents:
+
+- **Clients** post a task with a USDC payment held in escrow.
+- **Agents** can only take paid work after bonding **DLGR**. The bond is locked while a job is open.
+- When the client approves the result, the agent is paid (minus a 1% protocol fee). If the agent
+  fails or cheats, the client is refunded from escrow **and** half of the agent's bond is paid to
+  them as compensation while the other half is **burned**.
+
+Payments stay in a stablecoin because that is what agents and clients actually want. DLGR is the
+collateral that makes an agent worth trusting, so demand for DLGR grows with every agent that joins,
+and supply shrinks every time one misbehaves.
+
+Built with Solidity 0.8.28, OpenZeppelin 5 and Hardhat. Contracts live in `contracts/delegra/`.
+
+## Token
 
 | | |
 |---|---|
-| Supply | 1,000,000,000,000 CRZY (1 trillion), minted once to the deployer. **No mint function.** |
-| Transfer tax | 3% total: **1% burned forever**, **2% into the jackpot pot** |
-| Jackpot | Every 100 taxed transfers the whole pot is paid to one of the last 32 senders, picked at random |
-| Lucky 7 | Send an amount ending in **777 whole CRZY** (777, 1 777, 42 777…) and pay **no tax** |
-| Anti-whale | Max 1% of supply per transfer, max 2% of supply per wallet (owner can switch off) |
-| Trading gate | Transfers are closed until the owner calls `enableTrading()` once. Irreversible. |
-| Gasless approvals | EIP-2612 `permit` |
+| Name / ticker | Delegra / **DLGR** |
+| Supply | 1,000,000,000, fixed. **No mint function, no owner, no transfer tax, no pause.** |
+| Burn | Slashed bonds are burned by the registry (`totalBurned` on-chain) |
+| Standard | ERC-20 + EIP-2612 permit |
+| Suggested split | 40% liquidity & public, 25% ecosystem/agent rewards, 20% team (3-year vesting), 15% treasury |
 
-Owner powers are deliberately tiny: tune the tax (hard-capped at 5% total), set the draw interval (min 10),
-toggle whale limits, exempt addresses (DEX router, pool, treasury) from tax and limits, and renounce ownership
-to freeze the rules forever.
+## Contracts
 
-> ⚠️ Jackpot randomness uses `block.prevrandao` + previous blockhash. Fine for a meme raffle, not for
-> anything a block proposer would bother to game. Nothing here is financial advice; test on a testnet first.
+| Contract | Purpose |
+|---|---|
+| `DelegraToken` | The fixed-supply DLGR token |
+| `AgentRegistry` | Agents bond DLGR to become active; escrow can lock, release and slash bonds; 7-day unbond cooldown; on-chain job record (completed / failed) |
+| `TaskEscrow` | Task lifecycle: create → accept → submit → approve / reject / timeout / dispute; USDC escrow; 1% fee (hard-capped at 5%); 3-day review window after which silent clients auto-approve |
+| `MockUSDC` | Test-only USDC stand-in (6 decimals). Never deploy to mainnet; pass `USDC_ADDRESS` instead. |
+
+### Task lifecycle
+
+```
+client.createTask(USDC, payment, bondRequired, deadline, specURI, agent?)   Open
+agent.acceptTask(id)                      bond locked                     Accepted
+agent.submitResult(id, resultURI)                                         Submitted
+client.approve(id)                        agent paid, bond released       Completed
+client.reject(id, reason)                 arbiter decides                 Disputed → Completed | Failed
+anyone.finalize(id) after 3 days          silent client = approval        Completed
+client.claimTimeout(id) after deadline    refund + slash                  Failed
+client.cancel(id) while Open              refund                          Cancelled
+```
+
+Admin powers (meant for a multisig/timelock before mainnet): set the escrow address, minimum bond,
+unbond cooldown, allowed payment tokens, fee (≤5%), treasury, arbiter and review window. Nothing
+can touch user funds or mint tokens.
 
 ## Quick start
 
 ```bash
 npm install
-npx hardhat test                                   # 16 tests
-npx hardhat run scripts/deploy.js                  # deploy to an in-process chain
+npx hardhat test                               # 30 tests (Delegra + the earlier CrazyCoin experiment)
+npx hardhat run scripts/demo-delegra.js        # full agent-hiring flow on an in-process chain
 ```
 
 ## Deploy to a testnet
 
 ```bash
-cp .env.example .env     # fill in RPC URL + a throwaway deployer private key (never your main wallet)
-npx hardhat run scripts/deploy.js --network sepolia          # or --network baseSepolia
-npx hardhat verify --network sepolia <ADDRESS> <DEPLOYER_ADDRESS>
+cp .env.example .env     # RPC URL + a throwaway deployer private key (never your main wallet)
+npx hardhat run scripts/deploy-delegra.js --network sepolia      # or --network baseSepolia
 ```
 
-Launch sequence recommended for a real launch:
-1. Deploy. Trading is closed, so nobody can snipe.
-2. `setExempt(router, true)` and `setExempt(pool, true)` so the DEX isn't blocked by the whale limits.
-3. Add liquidity.
-4. `TOKEN_ADDRESS=0x... npx hardhat run scripts/enable-trading.js --network sepolia`
-5. Optionally `renounceOwnership()` once you're happy with the parameters.
+The script deploys the token, a MockUSDC (unless `USDC_ADDRESS` is set), the registry and the
+escrow, wires them together, writes `deployments/delegra-<network>.json` and prints the
+`hardhat verify` commands. Optional env: `TREASURY`, `MIN_BOND` (whole DLGR, default 1000).
 
-## Layout
+## Roadmap
 
-- `contracts/CrazyCoin.sol` — the token
-- `test/CrazyCoin.test.js` — behaviour tests (taxes, Lucky 7, limits, jackpot draw, permit)
-- `scripts/deploy.js`, `scripts/enable-trading.js`
-- `.github/workflows/ci.yml` — runs the tests on every push
+1. Testnet deployment + Etherscan verification
+2. Demo agent (Claude-powered) that watches for tasks, does them and gets paid on-chain
+3. Team vesting + liquidity lock contracts, then a multisig for admin
+4. Web app for posting tasks and browsing agents
+5. Audit, then Base mainnet
+
+## Earlier experiment: CrazyCoin (CRZY)
+
+`contracts/CrazyCoin.sol` is the meme-token experiment this repo started with (burn + jackpot
+lottery). It is deployed and verified on Sepolia (see `DEPLOYMENTS.md`) and kept for reference;
+it is not part of Delegra.
+
+## License
+
+MIT
