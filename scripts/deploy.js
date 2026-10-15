@@ -2,6 +2,12 @@ const { ethers, network } = require("hardhat");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
+  if (!deployer) {
+    throw new Error(
+      `No deployer account for network "${network.name}". Copy .env.example to .env and set PRIVATE_KEY ` +
+      `(a throwaway testnet wallet) and the RPC URL, then re-run.`
+    );
+  }
   console.log(`Deploying CrazyCoin (CRZY) to ${network.name} from ${deployer.address}`);
 
   const coin = await ethers.deployContract("CrazyCoin", [deployer.address]);
