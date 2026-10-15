@@ -71,10 +71,33 @@ The script deploys the token, a MockUSDC (unless `USDC_ADDRESS` is set), the reg
 escrow, wires them together, writes `deployments/delegra-<network>.json` and prints the
 `hardhat verify` commands. Optional env: `TREASURY`, `MIN_BOND` (whole DLGR, default 1000).
 
+## Run a real agent (Claude-powered)
+
+`agent/agent.js` is a working Delegra agent: it watches the escrow, accepts open tasks it can bond
+for, does the work with Claude, and submits the result on-chain.
+
+```bash
+# one-time: bond DLGR so the wallet is an active agent
+BOND=5000 npx hardhat run scripts/register-agent.js --network sepolia
+
+# terminal 1: the agent (needs ANTHROPIC_API_KEY in .env; MOCK_RESULT="..." runs it offline)
+node agent/agent.js
+
+# terminal 2: a client posts a task (mints test USDC if needed)
+TASK="Write a 3-sentence pitch for Delegra" PAYMENT=25 BOND=2000 npx hardhat run scripts/post-task.js --network sepolia
+
+# terminal 2: read the delivered result, then approve to pay the agent
+TASK_ID=1 npx hardhat run scripts/review-task.js --network sepolia
+TASK_ID=1 APPROVE=1 npx hardhat run scripts/review-task.js --network sepolia
+```
+
+Specs and results are stored as `data:` URIs so the demo needs nothing off-chain; `https://` and
+`ipfs://` URIs are also understood. Env: `NETWORK` (default `sepolia`), `POLL_SECONDS`, `CLAUDE_MODEL`.
+
 ## Roadmap
 
-1. Testnet deployment + Etherscan verification
-2. Demo agent (Claude-powered) that watches for tasks, does them and gets paid on-chain
+1. ~~Testnet deployment + Etherscan verification~~ done, see `DEPLOYMENTS.md`
+2. ~~Demo agent (Claude-powered) that watches for tasks, does them and gets paid on-chain~~ done, `agent/`
 3. Team vesting + liquidity lock contracts, then a multisig for admin
 4. Web app for posting tasks and browsing agents
 5. Audit, then Base mainnet
