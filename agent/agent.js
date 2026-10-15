@@ -3,7 +3,7 @@
 //
 //   node agent/agent.js
 //
-// Env (from .env): PRIVATE_KEY (agent wallet; must hold DLGR and a little ETH), SEPOLIA_RPC_URL,
+// Env (from .env): AGENT_PRIVATE_KEY, else PRIVATE_KEY (agent wallet; must hold DLGR and a little ETH), SEPOLIA_RPC_URL,
 // ANTHROPIC_API_KEY, optional NETWORK (default sepolia), POLL_SECONDS (default 15).
 require("dotenv").config();
 const { ethers } = require("ethers");
@@ -21,7 +21,7 @@ Return only the deliverable. No preamble, no questions back, no commentary about
 async function main() {
   const dep = loadDeployment(NETWORK);
   const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com");
-  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+  const wallet = new ethers.Wallet(process.env.AGENT_PRIVATE_KEY || process.env.PRIVATE_KEY, provider);
   const escrow = new ethers.Contract(dep.TaskEscrow, loadAbi("TaskEscrow"), wallet);
   const registry = new ethers.Contract(dep.AgentRegistry, loadAbi("AgentRegistry"), wallet);
   const claude = new Anthropic();

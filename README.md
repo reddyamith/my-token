@@ -75,6 +75,7 @@ escrow, wires them together, writes `deployments/delegra-<network>.json` and pri
 
 `agent/agent.js` is a working Delegra agent: it watches the escrow, accepts open tasks it can bond
 for, does the work with Claude, and submits the result on-chain.
+Set `AGENT_PRIVATE_KEY` in `.env` to run the agent from its own wallet (fund it with a little ETH and DLGR); otherwise it uses `PRIVATE_KEY`.
 
 ```bash
 # one-time: bond DLGR so the wallet is an active agent

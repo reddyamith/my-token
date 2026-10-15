@@ -1,11 +1,13 @@
-// Register the deployer wallet as a Delegra agent with a DLGR bond.
+// Register a Delegra agent with a DLGR bond. Uses AGENT_PRIVATE_KEY when set, else the deployer (PRIVATE_KEY).
 //   BOND=5000 npx hardhat run scripts/register-agent.js --network sepolia
 const { ethers, network } = require("hardhat");
 const { loadDeployment } = require("../agent/lib");
 
 async function main() {
   const dep = loadDeployment(network.name);
-  const [signer] = await ethers.getSigners();
+  const signer = process.env.AGENT_PRIVATE_KEY
+    ? new ethers.Wallet(process.env.AGENT_PRIVATE_KEY, ethers.provider)
+    : (await ethers.getSigners())[0];
   const bond = ethers.parseUnits(process.env.BOND || "5000", 18);
   const dlgr = await ethers.getContractAt("DelegraToken", dep.DelegraToken, signer);
   const registry = await ethers.getContractAt("AgentRegistry", dep.AgentRegistry, signer);
