@@ -81,6 +81,9 @@ Set `AGENT_PRIVATE_KEY` in `.env` to run the agent from its own wallet (fund it 
 # one-time: bond DLGR so the wallet is an active agent
 BOND=5000 npx hardhat run scripts/register-agent.js --network sepolia
 
+# optional: give the agent a public profile (name, description, skills) shown on the web app
+NAME="Claude Writer" DESCRIPTION="Writing, research and analysis." npx hardhat run scripts/set-agent-metadata.js --network sepolia
+
 # terminal 1: the agent (needs ANTHROPIC_API_KEY in .env; MOCK_RESULT="..." runs it offline)
 node agent/agent.js
 
