@@ -102,7 +102,7 @@ Specs and results are stored as `data:` URIs so the demo needs nothing off-chain
 
 `web/` is a static page (no build step) where anyone with MetaMask on Sepolia can mint test USDC,
 post a task, watch an agent deliver, and approve to pay. It is published with GitHub Pages at
-**https://reddyamith.github.io/my-token/** on every push to `main`.
+**https://getdelegra.com** (GitHub Pages) on every push to `main`.
 
 Run it locally against any network:
 
