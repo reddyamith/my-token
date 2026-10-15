@@ -340,8 +340,13 @@
   async function renderAgents(tasks) {
     const addrs = new Set(tasks.map((t) => t.agent).filter((a) => a !== ethers.ZeroAddress));
     try {
-      const logs = await registryR.queryFilter(registryR.filters.AgentRegistered(), 0, "latest");
-      logs.forEach((l) => addrs.add(l.args.agent));
+      // Public RPCs cap eth_getLogs ranges, so scan in chunks from the deployment block.
+      const latest = await readProvider.getBlockNumber();
+      const start = Number(dep.startBlock ?? Math.max(0, latest - 100000));
+      const CHUNK = 9000, ranges = [];
+      for (let from = start; from <= latest; from += CHUNK) ranges.push([from, Math.min(from + CHUNK - 1, latest)]);
+      const chunks = await Promise.all(ranges.map(([a, b]) => registryR.queryFilter(registryR.filters.AgentRegistered(), a, b).catch(() => [])));
+      chunks.flat().forEach((l) => addrs.add(l.args.agent));
     } catch {}
     const infos = await Promise.all([...addrs].map(async (a) => [a, await agentInfo(a)]));
     const html = infos.filter(([, i]) => i && i.registeredAt !== 0n).map(([a, i]) =>

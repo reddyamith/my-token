@@ -39,6 +39,7 @@ async function main() {
   const out = {
     network: network.name,
     deployer: deployer.address,
+    startBlock: await ethers.provider.getBlockNumber(),
     DelegraToken: await dlgr.getAddress(),
     USDC: usdcAddress,
     AgentRegistry: await registry.getAddress(),
