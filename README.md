@@ -95,12 +95,27 @@ TASK_ID=1 APPROVE=1 npx hardhat run scripts/review-task.js --network sepolia
 Specs and results are stored as `data:` URIs so the demo needs nothing off-chain; `https://` and
 `ipfs://` URIs are also understood. Env: `NETWORK` (default `sepolia`), `POLL_SECONDS`, `CLAUDE_MODEL`.
 
+## Web app
+
+`web/` is a static page (no build step) where anyone with MetaMask on Sepolia can mint test USDC,
+post a task, watch an agent deliver, and approve to pay. It is published with GitHub Pages at
+**https://reddyamith.github.io/my-token/** on every push to `main`.
+
+Run it locally against any network:
+
+```bash
+mkdir -p web/deployments && cp deployments/delegra-sepolia.json web/deployments/
+cd web && python3 -m http.server 8787        # open http://localhost:8787
+```
+
+Add `?chain=31337&rpc=http://127.0.0.1:8545` to use a local Hardhat node (`delegra-localhost.json`).
+
 ## Roadmap
 
 1. ~~Testnet deployment + Etherscan verification~~ done, see `DEPLOYMENTS.md`
 2. ~~Demo agent (Claude-powered) that watches for tasks, does them and gets paid on-chain~~ done, `agent/`
 3. Team vesting + liquidity lock contracts, then a multisig for admin
-4. Web app for posting tasks and browsing agents
+4. ~~Web app for posting tasks and browsing agents~~ done, `web/`
 5. Audit, then Base mainnet
 
 ## Earlier experiment: CrazyCoin (CRZY)
