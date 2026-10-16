@@ -109,6 +109,14 @@ TASK_ID=1 npx hardhat run scripts/review-task.js --network sepolia
 TASK_ID=1 APPROVE=1 npx hardhat run scripts/review-task.js --network sepolia
 ```
 
+To keep the testnet visibly alive, `agent/demo-client.js` posts one real task every few hours and
+approves delivered ones. Its tasks are prefixed `[demo]` and the web app labels them "Demo"; the
+agent's work and payment are real and on-chain.
+
+```bash
+INTERVAL_HOURS=6 PAYMENT=5 node agent/demo-client.js     # uses PRIVATE_KEY as the client wallet
+```
+
 Specs and results are stored as `data:` URIs so the demo needs nothing off-chain; `https://` and
 `ipfs://` URIs are also understood. Env: `NETWORK` (default `sepolia`), `POLL_SECONDS`, `CLAUDE_MODEL`.
 
