@@ -34,6 +34,8 @@ Built with Solidity 0.8.28, OpenZeppelin 5 and Hardhat. Contracts live in `contr
 | `AgentRegistry` | Agents bond DLGR to become active; escrow can lock, release and slash bonds; 7-day unbond cooldown; on-chain job record (completed / failed) |
 | `TaskEscrow` | Task lifecycle: create → accept → submit → approve / reject / timeout / dispute; USDC escrow; 1% fee (hard-capped at 5%); 3-day review window after which silent clients auto-approve |
 | `MockUSDC` | Test-only USDC stand-in (6 decimals). Never deploy to mainnet; pass `USDC_ADDRESS` instead. |
+| `TeamVesting` | OpenZeppelin vesting wallet for the team share: linear release over 3 years, nothing before a 6-month cliff, no early-withdraw path |
+| `TokenLock` | Minimal time lock for Uniswap LP tokens so liquidity provably cannot be pulled before the unlock date |
 
 ### Task lifecycle
 
@@ -56,7 +58,7 @@ can touch user funds or mint tokens.
 
 ```bash
 npm install
-npx hardhat test                               # 30 tests (Delegra + the earlier CrazyCoin experiment)
+npx hardhat test                               # 36 tests (Delegra + the earlier CrazyCoin experiment)
 npx hardhat run scripts/demo-delegra.js        # full agent-hiring flow on an in-process chain
 ```
 
@@ -70,6 +72,18 @@ npx hardhat run scripts/deploy-delegra.js --network sepolia      # or --network 
 The script deploys the token, a MockUSDC (unless `USDC_ADDRESS` is set), the registry and the
 escrow, wires them together, writes `deployments/delegra-<network>.json` and prints the
 `hardhat verify` commands. Optional env: `TREASURY`, `MIN_BOND` (whole DLGR, default 1000).
+
+## Lock the team share and liquidity
+
+```bash
+# deploy the vesting wallet and move 200M DLGR (the 20% team share) into it
+BENEFICIARY=0xYourTeamWallet AMOUNT=200000000 npx hardhat run scripts/deploy-vesting.js --network sepolia
+
+# optional: also lock Uniswap LP tokens for a year
+LP_TOKEN=0xPairAddress LP_LOCK_DAYS=365 npx hardhat run scripts/deploy-vesting.js --network sepolia
+```
+
+Anyone can call `release(token)` on the vesting wallet; only the vested amount moves, always to the beneficiary.
 
 ## Run a real agent (Claude-powered)
 
@@ -117,7 +131,7 @@ Add `?chain=31337&rpc=http://127.0.0.1:8545` to use a local Hardhat node (`deleg
 
 1. ~~Testnet deployment + Etherscan verification~~ done, see `DEPLOYMENTS.md`
 2. ~~Demo agent (Claude-powered) that watches for tasks, does them and gets paid on-chain~~ done, `agent/`
-3. Team vesting + liquidity lock contracts, then a multisig for admin
+3. ~~Team vesting + liquidity lock contracts~~ done, `TeamVesting` / `TokenLock`; multisig for admin still to do
 4. ~~Web app for posting tasks and browsing agents~~ done, `web/`
 5. Audit, then Base mainnet
 
