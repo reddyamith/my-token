@@ -6,3 +6,4 @@ deployments/*-hardhat.json
 deployments/*-localhost.json
 agent.log
 web/deployments/
+demo-client.log
