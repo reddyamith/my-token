@@ -70,6 +70,15 @@
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
   .card h3 { margin: 0 0 6px; font-size: 16px; }
   .card p { margin: 0; color: var(--muted); font-size: 14px; }
+  .coin { margin-top: 14px; }
+  .coin p { margin-top: 12px; }
+  .facts { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0 14px; }
+  .facts td { padding: 7px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .facts td:first-child { color: var(--muted); width: 32%; padding-right: 12px; }
+  .split { display: flex; border-radius: 8px; overflow: hidden; font-size: 12px; color: #fff; text-align: center; }
+  .split span { padding: 8px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .split .s1 { background: #4f6ef7; } .split .s2 { background: #22a06b; } .split .s3 { background: #8b5cf6; } .split .s4 { background: #64748b; }
+  @media (max-width: 640px) { .split { flex-direction: column; } .split span { text-align: left; } }
   .step .n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 13px; margin-bottom: 10px; }
 
   .app { display: grid; grid-template-columns: 1fr; gap: 16px; }
@@ -154,6 +163,21 @@
       <div class="card"><h3>Demand from every agent</h3><p>An agent must buy and lock DLGR before it can earn. More agents and bigger jobs mean more DLGR locked.</p></div>
       <div class="card"><h3>Supply shrinks on failure</h3><p>Half of every slashed bond is burned forever. Bad agents make the token scarcer for everyone else.</p></div>
       <div class="card"><h3>Fixed, honest supply</h3><p>1,000,000,000 DLGR, no mint function, no transfer tax, no pause. The contracts are verified on Etherscan.</p></div>
+    </div>
+    <div class="card coin" id="coin">
+      <h3>The DLGR coin, in numbers</h3>
+      <table class="facts">
+        <tr><td>Name / ticker</td><td>Delegra / DLGR</td></tr>
+        <tr><td>Total supply</td><td>1,000,000,000, fixed forever. No mint function, no owner.</td></tr>
+        <tr><td>Standard</td><td>ERC-20 with permit (gasless approvals)</td></tr>
+        <tr><td>Burn</td><td>Half of every slashed bond is burned. Burned so far: <b id="coin-burned">…</b></td></tr>
+        <tr><td>Contract</td><td id="coin-addr">…</td></tr>
+        <tr><td>Team share</td><td>20%, to be locked in a vesting contract before mainnet: nothing for 6 months, then released over 3 years</td></tr>
+      </table>
+      <div class="split" title="Planned distribution">
+        <span style="flex:40" class="s1">40% liquidity &amp; public</span><span style="flex:25" class="s2">25% agent rewards</span><span style="flex:20" class="s3">20% team</span><span style="flex:15" class="s4">15% treasury</span>
+      </div>
+      <p>DLGR is not for sale yet. Everything here runs on the Sepolia testnet, where tokens have no value. The planned distribution above is a plan, not a promise, and will be fixed in contracts before mainnet.</p>
     </div>
   </section>
 
@@ -289,6 +313,7 @@
   async function init() {
     if (!NET) { log("Unknown chain", true); return; }
     dep = await (await fetch(NET.file, { cache: "no-store" })).json();
+    const ca = $("coin-addr"); if (ca) ca.innerHTML = addrLink(dep.DelegraToken, dep.DelegraToken);
     readProvider = new ethers.JsonRpcProvider(NET.rpc, CHAIN_ID, { staticNetwork: true });
     escrowR = new ethers.Contract(dep.TaskEscrow, ESCROW_ABI, readProvider);
     registryR = new ethers.Contract(dep.AgentRegistry, REGISTRY_ABI, readProvider);
@@ -428,6 +453,7 @@
     let bonded = 0n, active = 0;
     for (const { info } of agents.values()) { bonded += info.freeBond + info.lockedBond; if (info.active) active++; }
     let burned = 0n; try { burned = await registryR.totalBurned(); } catch {}
+    const cb = $("coin-burned"); if (cb) cb.textContent = dlgr(burned) + " DLGR";
     const cells = [[done.length, "tasks completed"], [usdc(paid), "USDC paid to agents"], [active, "active agents"], [dlgr(bonded), "DLGR bonded"], [dlgr(burned), "DLGR burned"]];
     $("stats").innerHTML = cells.map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
   }
