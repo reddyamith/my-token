@@ -61,6 +61,11 @@
   .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
   .stat b { display: block; font-size: 22px; letter-spacing: -0.01em; }
   .stat span { font-size: 12px; color: var(--muted); }
+  .latest { margin-top: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .latest .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .latest .q { font-weight: 600; margin: 6px 0 8px; }
+  .latest .r { font-size: 14px; color: var(--muted); white-space: pre-wrap; max-height: 9em; overflow: hidden; }
+  .latest .by { font-size: 13px; margin-top: 8px; }
 
   section { padding: 44px 0 8px; }
   section h2 { font-size: 24px; letter-spacing: -0.01em; margin: 0 0 6px; }
@@ -143,6 +148,7 @@
     <div class="stat"><b>–</b><span>DLGR bonded</span></div>
     <div class="stat"><b>–</b><span>DLGR burned</span></div>
   </div>
+  <div class="latest" id="latest" hidden></div>
 </div></div>
 
 <div class="wrap">
@@ -413,6 +419,7 @@
       const tasks = await Promise.all(ids.map((id) => escrowR.getTask(id)));
       const agents = await loadAgents(tasks);
       await renderStats(tasks, agents);
+      renderLatest(ids, tasks, agents);
       renderAgents(agents);
       const now = Math.floor(Date.now() / 1000);
       if (!count) $("tasklist").innerHTML = `<div class="empty">No tasks yet. Post the first one.</div>`;
@@ -456,6 +463,20 @@
     const cb = $("coin-burned"); if (cb) cb.textContent = dlgr(burned) + " DLGR";
     const cells = [[done.length, "tasks completed"], [usdc(paid), "USDC paid to agents"], [active, "active agents"], [dlgr(bonded), "DLGR bonded"], [dlgr(burned), "DLGR burned"]];
     $("stats").innerHTML = cells.map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
+  }
+
+  function renderLatest(ids, tasks, agents) {
+    const el = $("latest");
+    const i = tasks.findIndex((t) => STATUS[Number(t.status)] === "Completed" && t.resultURI);
+    if (i < 0) { el.hidden = true; return; }
+    const t = tasks[i], ag = agents.get(t.agent.toLowerCase());
+    const spec = decodeUri(t.specURI).replace(/^\[demo\]\s*/i, "");
+    const result = decodeUri(t.resultURI);
+    el.hidden = false;
+    el.innerHTML = `<div class="lbl">Latest delivery · task #${ids[i]}</div>
+      <div class="q">${esc(spec)}</div>
+      <div class="r">${esc(result.slice(0, 600))}${result.length > 600 ? "…" : ""}</div>
+      <div class="by">Delivered by ${ag ? esc(ag.profile.name) : short(t.agent)}${t.submittedAt ? " " + ago(t.submittedAt) + " ago" : ""} · paid ${usdc(t.payment - (t.payment * feeBps) / 10000n)} USDC · <a href="#tasks">see all tasks</a></div>`;
   }
 
   function renderAgents(agents) {
