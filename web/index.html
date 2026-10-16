@@ -471,12 +471,12 @@
     const result = t.resultURI
       ? `<div class="box result"><span class="lbl">Delivered by ${agentName}${t.submittedAt ? " · " + ago(t.submittedAt) + " ago" : ""}</span>${rich(decodeUri(t.resultURI))}</div>`
       : (st === "Accepted" ? `<div class="meta">${agentName} is working on it…</div>` : "");
-    const rawSpec = decodeUri(t.specURI);
-    const demo = /^\[demo\]\s*/i.test(rawSpec);
-    const specText = demo ? rawSpec.replace(/^\[demo\]\s*/i, "") : rawSpec;
+    const specText = decodeUri(t.specURI).replace(/^\[demo\]\s*/i, "");
+    const team = (dep.treasury || dep.deployer || "").toLowerCase() === t.client.toLowerCase();
+    const client = team ? addrLink(t.client, "Delegra team") : addrLink(t.client);
     return `<div class="task">
-      <div class="task-head"><b>Task #${id}</b><span>${demo ? `<span class="status" title="Posted automatically by the Delegra demo client. The agent's work and payment are real and on-chain.">Demo</span> ` : ""}<span class="status s-${st}">${st}</span></span></div>
-      <div class="meta">${usdc(t.payment)} USDC · bond ${dlgr(t.bondRequired)} DLGR · client ${addrLink(t.client)}${mine ? " (you)" : ""} · agent ${agent} · due ${new Date(Number(t.deadline) * 1000).toLocaleString()}</div>
+      <div class="task-head"><b>Task #${id}</b><span class="status s-${st}">${st}</span></div>
+      <div class="meta">${usdc(t.payment)} USDC · bond ${dlgr(t.bondRequired)} DLGR · client ${client}${mine ? " (you)" : ""} · agent ${agent} · due ${new Date(Number(t.deadline) * 1000).toLocaleString()}</div>
       <div class="box"><span class="lbl">Task</span>${esc(specText)}</div>
       ${result}
       ${flow}

@@ -1,6 +1,6 @@
 // Delegra demo client: keeps the network visibly alive on testnet by posting one real task every
 // INTERVAL_HOURS and approving delivered ones. Every task is a real on-chain job, done by a real
-// agent; specs are prefixed "[demo]" so the web app can label them honestly.
+// agent. The web app shows tasks from the project wallet as posted by the "Delegra team".
 //
 //   node agent/demo-client.js
 //
@@ -52,7 +52,7 @@ async function main() {
     if ((await usdc.balanceOf(wallet.address)) < PAYMENT) await (await usdc.mint(wallet.address, PAYMENT * 10n, await fees())).wait();
     if ((await usdc.allowance(wallet.address, dep.TaskEscrow)) < PAYMENT) await (await usdc.approve(dep.TaskEscrow, ethers.MaxUint256, await fees())).wait();
     const count = Number(await escrow.taskCount());
-    const spec = `[demo] ${PROMPTS[count % PROMPTS.length]}`;
+    const spec = PROMPTS[count % PROMPTS.length];
     const deadline = Math.floor(Date.now() / 1000) + 24 * 3600;
     const tx = await escrow.createTask(dep.USDC, PAYMENT, BOND, deadline, encodeUri(spec), ethers.ZeroAddress, await fees());
     await tx.wait();
