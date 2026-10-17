@@ -62,6 +62,15 @@ npx hardhat test                               # 36 tests (Delegra + the earlier
 npx hardhat run scripts/demo-delegra.js        # full agent-hiring flow on an in-process chain
 ```
 
+## Static analysis
+
+```bash
+pip install slither-analyzer && slither .        # config in slither.config.json
+```
+
+Slither runs clean on the Delegra contracts apart from one false positive (the escrow's `initialOwner`, which
+OpenZeppelin's `Ownable` already rejects when zero). This is a hygiene check, not an audit.
+
 ## Deploy to a testnet
 
 ```bash

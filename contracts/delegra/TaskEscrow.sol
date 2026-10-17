@@ -72,6 +72,7 @@ contract TaskEscrow is Ownable2Step, ReentrancyGuard {
     event ReviewWindowSet(uint64 window);
 
     error WrongStatus(Status current);
+    error ZeroAddress();
     error NotClient();
     error NotAgent();
     error NotArbiter();
@@ -84,6 +85,7 @@ contract TaskEscrow is Ownable2Step, ReentrancyGuard {
     error FeeTooHigh();
 
     constructor(AgentRegistry registry_, address treasury_, address initialOwner) Ownable(initialOwner) {
+        if (address(registry_) == address(0) || treasury_ == address(0)) revert ZeroAddress();
         registry = registry_;
         treasury = treasury_;
         arbiter = initialOwner;
@@ -237,11 +239,13 @@ contract TaskEscrow is Ownable2Step, ReentrancyGuard {
     }
 
     function setTreasury(address treasury_) external onlyOwner {
+        if (treasury_ == address(0)) revert ZeroAddress();
         treasury = treasury_;
         emit TreasurySet(treasury_);
     }
 
     function setArbiter(address arbiter_) external onlyOwner {
+        if (arbiter_ == address(0)) revert ZeroAddress();
         arbiter = arbiter_;
         emit ArbiterSet(arbiter_);
     }

@@ -61,6 +61,7 @@ contract AgentRegistry is Ownable2Step, ReentrancyGuard {
     event UnbondCooldownSet(uint64 cooldown);
 
     error NotEscrow();
+    error ZeroAddress();
     error AlreadyRegistered();
     error NotRegistered();
     error BondTooLow(uint256 given, uint256 min);
@@ -190,11 +191,12 @@ contract AgentRegistry is Ownable2Step, ReentrancyGuard {
         uint256 compensation = amount / 2;
         uint256 burnAmount = amount - compensation;
         totalBurned += burnAmount;
-        ERC20Burnable(address(dlgr)).burn(burnAmount);
-        if (compensation > 0) dlgr.safeTransfer(to, compensation);
-
+        // Effects before interactions: finish all state changes before touching the token.
         if (a.freeBond + a.lockedBond < minBond) a.active = false;
         emit BondSlashed(agent, burnAmount, compensation, to);
+
+        ERC20Burnable(address(dlgr)).burn(burnAmount);
+        if (compensation > 0) dlgr.safeTransfer(to, compensation);
     }
 
     function recordJob(address agent, bool success) external onlyEscrow {
@@ -207,6 +209,7 @@ contract AgentRegistry is Ownable2Step, ReentrancyGuard {
     // ------------------------------------------------------------------ admin
 
     function setEscrow(address escrow_) external onlyOwner {
+        if (escrow_ == address(0)) revert ZeroAddress();
         escrow = escrow_;
         emit EscrowSet(escrow_);
     }
