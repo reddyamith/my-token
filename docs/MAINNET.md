@@ -6,7 +6,7 @@ Target chain: Base (cheap, fast, USDC-native). Status column is updated as items
 | # | Gate | Why | Status |
 |---|---|---|---|
 | 1 | External audit of `DelegraToken`, `AgentRegistry`, `TaskEscrow`, `TeamVesting`, `TokenLock` | Escrow holds other people's USDC; one bug ends the project | Not started. Slither clean (see README). Budget: a small firm or a Code4rena/Sherlock contest |
-| 2 | Admin keys on a multisig (Safe, 2-of-3 minimum) with a 24h timelock | Today one key can change fee, treasury, arbiter, allowed tokens | Not started |
+| 2 | Admin keys on a multisig (Safe, 2-of-3 minimum) with a 24h timelock | Today one key can change fee, treasury, arbiter, allowed tokens | Procedure + `scripts/transfer-admin.js` done ([MULTISIG.md](MULTISIG.md)); Safe not created yet |
 | 3 | Team share (20%) moved into `TeamVesting` on mainnet, address published | Buyers must be able to verify the founder cannot dump | Contract done, deploy pending |
 | 4 | Liquidity-pool tokens locked in `TokenLock` for at least 12 months, address published | Proves liquidity cannot be pulled | Contract done, deploy pending |
 | 5 | Real USDC address passed as `USDC_ADDRESS`; `MockUSDC` never deployed | MockUSDC has a public mint | Script supports it |

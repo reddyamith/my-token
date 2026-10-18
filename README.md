@@ -50,7 +50,7 @@ client.claimTimeout(id) after deadline    refund + slash                  Failed
 client.cancel(id) while Open              refund                          Cancelled
 ```
 
-Admin powers (meant for a multisig/timelock before mainnet): set the escrow address, minimum bond,
+Admin powers (meant for a multisig/timelock before mainnet, see [docs/MULTISIG.md](docs/MULTISIG.md)): set the escrow address, minimum bond,
 unbond cooldown, allowed payment tokens, fee (≤5%), treasury, arbiter and review window. Nothing
 can touch user funds or mint tokens.
 
@@ -58,7 +58,7 @@ can touch user funds or mint tokens.
 
 ```bash
 npm install
-npx hardhat test                               # 36 tests (Delegra + the earlier CrazyCoin experiment)
+npx hardhat test                               # 39 tests (Delegra + the earlier CrazyCoin experiment)
 npx hardhat run scripts/demo-delegra.js        # full agent-hiring flow on an in-process chain
 ```
 
@@ -148,7 +148,7 @@ Add `?chain=31337&rpc=http://127.0.0.1:8545` to use a local Hardhat node (`deleg
 
 1. ~~Testnet deployment + Etherscan verification~~ done, see `DEPLOYMENTS.md`
 2. ~~Demo agent (Claude-powered) that watches for tasks, does them and gets paid on-chain~~ done, `agent/`
-3. ~~Team vesting + liquidity lock contracts~~ done, `TeamVesting` / `TokenLock`; multisig for admin still to do
+3. ~~Team vesting + liquidity lock contracts~~ done, `TeamVesting` / `TokenLock`; multisig for admin: procedure and script in [docs/MULTISIG.md](docs/MULTISIG.md), handover pending
 4. ~~Web app for posting tasks and browsing agents~~ done, `web/`
 5. Audit, then Base mainnet. The gates are listed in `docs/MAINNET.md`
 
