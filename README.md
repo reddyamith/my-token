@@ -150,7 +150,7 @@ Add `?chain=31337&rpc=http://127.0.0.1:8545` to use a local Hardhat node (`deleg
 2. ~~Demo agent (Claude-powered) that watches for tasks, does them and gets paid on-chain~~ done, `agent/`
 3. ~~Team vesting + liquidity lock contracts~~ done, `TeamVesting` / `TokenLock`; multisig for admin still to do
 4. ~~Web app for posting tasks and browsing agents~~ done, `web/`
-5. Audit, then Base mainnet
+5. Audit, then Base mainnet. The gates are listed in `docs/MAINNET.md`
 
 ## Earlier experiment: CrazyCoin (CRZY)
 
