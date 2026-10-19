@@ -236,7 +236,7 @@
   const { ethers } = window;
 
   const NETWORKS = {
-    11155111: { name: "sepolia", label: "Sepolia", rpc: "https://ethereum-sepolia-rpc.publicnode.com", explorer: "https://sepolia.etherscan.io", file: "deployments/delegra-sepolia.json", chainIdHex: "0xaa36a7" },
+    11155111: { name: "sepolia", label: "Sepolia", rpc: "https://ethereum-sepolia-rpc.publicnode.com", explorer: "https://sepolia.etherscan.io", file: "deployments/delegra-sepolia.json", chainIdHex: "0xaa36a7", faucet: "https://cloud.google.com/application/web3/faucet/ethereum/sepolia" },
     31337:    { name: "localhost", label: "Localhost", rpc: "http://127.0.0.1:8545", explorer: "", file: "deployments/delegra-localhost.json", chainIdHex: "0x7a69" },
   };
   const params = new URLSearchParams(location.search);
@@ -312,8 +312,16 @@
   }
   function log(msg, isErr) { $("log").textContent = msg; $("log").className = isErr ? "err" : ""; }
   function errText(e) {
+    const code = e?.code ?? e?.info?.error?.code;
     const m = e?.info?.error?.message || e?.shortMessage || e?.reason || e?.message || String(e);
+    if (code === 4001 || code === "ACTION_REJECTED" || /user (rejected|denied)/i.test(m)) return "Cancelled in your wallet. Nothing was sent.";
+    if (code === "INSUFFICIENT_FUNDS" || /insufficient funds/i.test(m)) return `Not enough ${NET.label} ETH to pay gas. ${NET.faucet ? "Get a little from a faucet: " + NET.faucet : ""}`.trim();
+    if (code === -32002 || /already pending/i.test(m)) return "Your wallet already has a request open. Open MetaMask and finish or cancel it.";
+    if (code === "CALL_EXCEPTION" && !m.includes("(")) return "The contract rejected this. Reload the page; the task may have changed state.";
     return m.length > 220 ? m.slice(0, 220) + "…" : m;
+  }
+  async function hasGas() {
+    try { return (await readProvider.getBalance(account)) > ethers.parseEther("0.0002"); } catch { return true; }
   }
 
   async function init() {
@@ -370,11 +378,14 @@
 
   async function mint() {
     try {
+      $("mint").disabled = true;
+      if (!(await hasGas())) { log(errText({ code: "INSUFFICIENT_FUNDS" }), true); return; }
       log("Minting 100 test USDC… confirm in your wallet.");
       const tx = await usdcW.mint(account, ethers.parseUnits("100", 6), await fees());
       log(`Sent ${tx.hash}. Waiting…`); await tx.wait();
       log("Minted 100 test USDC."); renderWallet();
     } catch (e) { log(errText(e), true); }
+    finally { $("mint").disabled = !account; }
   }
 
   async function post() {
@@ -385,14 +396,20 @@
     const deadline = BigInt(Math.floor(Date.now() / 1000) + Number($("hours").value || 24) * 3600);
     try {
       $("post").disabled = true;
+      if (payment <= 0n) { log("Set a payment above 0 USDC.", true); return; }
+      if (!(await hasGas())) { log(errText({ code: "INSUFFICIENT_FUNDS" }), true); return; }
       const bal = await usdcW.balanceOf(account);
       if (bal < payment) { log(`You have ${usdc(bal)} USDC. Click "Get 100 test USDC" first.`, true); return; }
       const allowance = await usdcW.allowance(account, dep.TaskEscrow);
       if (allowance < payment) {
-        log("Step 1 of 2: approve USDC spending… confirm in your wallet.");
-        await (await usdcW.approve(dep.TaskEscrow, payment, await fees())).wait();
+        // Approve 10× this payment once, so the next few tasks are a single wallet confirmation.
+        const approveAmt = payment * 10n > bal ? bal : payment * 10n;
+        log(`Step 1 of 2: allow the escrow to take up to ${usdc(approveAmt)} USDC (covers this and the next tasks)… confirm in your wallet.`);
+        await (await usdcW.approve(dep.TaskEscrow, approveAmt, await fees())).wait();
+        log("Step 2 of 2: post the task… confirm in your wallet.");
+      } else {
+        log("Posting the task… confirm in your wallet (one click, USDC already approved).");
       }
-      log("Step 2 of 2: post the task… confirm in your wallet.");
       const tx = await escrowW.createTask(dep.USDC, payment, bond, deadline, encodeUri(spec), ethers.ZeroAddress, await fees());
       log(`Posting… ${tx.hash}`); await tx.wait();
       log("Task posted. An agent will pick it up shortly; the result appears under Live tasks.");
