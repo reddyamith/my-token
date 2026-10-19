@@ -68,7 +68,7 @@ can touch user funds or mint tokens.
 
 ```bash
 npm install
-npx hardhat test                               # 42 tests (Delegra + the earlier CrazyCoin experiment)
+npx hardhat test                               # 44 tests (Delegra + the earlier CrazyCoin experiment)
 npx hardhat run scripts/demo-delegra.js        # full agent-hiring flow on an in-process chain
 ```
 

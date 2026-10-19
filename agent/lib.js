@@ -51,4 +51,42 @@ function loadProfile(name) {
   return prof;
 }
 
-module.exports = { loadDeployment, loadAbi, encodeUri, decodeUri, loadProfile };
+// Public Sepolia RPCs go down for minutes at a time (the agent log is full of ENOTFOUND / timeout
+// from a single endpoint). Use several, quorum 1, so one bad endpoint never stalls the agent.
+const CHAIN_IDS = { sepolia: 11155111, localhost: 31337, baseSepolia: 84532 };
+const DEFAULT_RPCS = {
+  sepolia: [
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://sepolia.drpc.org",
+    "https://1rpc.io/sepolia",
+    "https://rpc.sepolia.org",
+  ],
+  baseSepolia: ["https://sepolia.base.org", "https://base-sepolia-rpc.publicnode.com"],
+  localhost: ["http://127.0.0.1:8545"],
+};
+
+function rpcUrls(network) {
+  const env = network === "sepolia" ? process.env.SEPOLIA_RPC_URLS || process.env.SEPOLIA_RPC_URL
+    : network === "baseSepolia" ? process.env.BASE_SEPOLIA_RPC_URLS || process.env.BASE_SEPOLIA_RPC_URL
+    : process.env.RPC_URL;
+  const fromEnv = (env || "").split(",").map((u) => u.trim()).filter(Boolean);
+  const all = [...fromEnv, ...(DEFAULT_RPCS[network] || [])];
+  return [...new Set(all)];
+}
+
+function makeProvider(network) {
+  const { ethers } = require("ethers");
+  const urls = rpcUrls(network);
+  if (!urls.length) throw new Error(`No RPC URL known for network ${network}; set RPC_URL`);
+  const chainId = CHAIN_IDS[network];
+  const net = chainId ? ethers.Network.from(chainId) : undefined;
+  const make = (u) => new ethers.JsonRpcProvider(u, net, net ? { staticNetwork: net } : {});
+  if (urls.length === 1) return make(urls[0]);
+  return new ethers.FallbackProvider(
+    urls.map((u, i) => ({ provider: make(u), priority: i + 1, weight: 1, stallTimeout: 1500 })),
+    net,
+    { quorum: 1 },
+  );
+}
+
+module.exports = { loadDeployment, loadAbi, encodeUri, decodeUri, loadProfile, makeProvider, rpcUrls };

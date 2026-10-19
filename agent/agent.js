@@ -5,12 +5,13 @@
 //
 // Env (from .env): AGENT_PRIVATE_KEY, else PRIVATE_KEY (agent wallet; must hold DLGR and a little ETH), SEPOLIA_RPC_URL,
 // ANTHROPIC_API_KEY, optional NETWORK (default sepolia), POLL_SECONDS (default 15),
+// SEPOLIA_RPC_URLS (comma-separated; public fallbacks are always appended),
 // AGENT_PROFILE (default writer; see agent/profiles/), AGENT_KEY_ENV (name of the env var holding
 // this agent's key, so a second agent can run from the same .env with its own wallet).
 require("dotenv").config();
 const { ethers } = require("ethers");
 const Anthropic = require("@anthropic-ai/sdk");
-const { loadDeployment, loadAbi, decodeUri, encodeUri, loadProfile } = require("./lib");
+const { loadDeployment, loadAbi, decodeUri, encodeUri, loadProfile, makeProvider, rpcUrls } = require("./lib");
 
 const NETWORK = process.env.NETWORK || "sepolia";
 const POLL_MS = (Number(process.env.POLL_SECONDS) || 15) * 1000;
@@ -20,7 +21,7 @@ const SYSTEM = PROFILE.system;
 
 async function main() {
   const dep = loadDeployment(NETWORK);
-  const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com");
+  const provider = makeProvider(NETWORK);
   const keyVar = process.env.AGENT_KEY_ENV || (process.env.AGENT_PRIVATE_KEY ? "AGENT_PRIVATE_KEY" : "PRIVATE_KEY");
   if (!process.env[keyVar]) throw new Error(`No key in ${keyVar}; set it in .env (never print it).`);
   const wallet = new ethers.Wallet(process.env[keyVar], provider);
@@ -28,7 +29,7 @@ async function main() {
   const registry = new ethers.Contract(dep.AgentRegistry, loadAbi("AgentRegistry"), wallet);
   const claude = new Anthropic();
 
-  console.log(`Delegra agent "${PROFILE.name}" ${wallet.address} on ${NETWORK}`);
+  console.log(`Delegra agent "${PROFILE.name}" ${wallet.address} on ${NETWORK} via ${rpcUrls(NETWORK).length} RPC endpoint(s)`);
   const me = await registry.getAgent(wallet.address);
   if (!me.active) throw new Error("This wallet is not an active agent. Run scripts/register-agent.js first.");
   console.log(`Active. Free bond: ${ethers.formatUnits(me.freeBond, 18)} DLGR, jobs done: ${me.jobsCompleted}`);

@@ -9,7 +9,7 @@
 // PAYMENT (USDC, default 5), BOND (DLGR, default 1000), POLL_SECONDS (default 60).
 require("dotenv").config();
 const { ethers } = require("ethers");
-const { loadDeployment, loadAbi, encodeUri } = require("./lib");
+const { loadDeployment, loadAbi, encodeUri, makeProvider } = require("./lib");
 
 const NETWORK = process.env.NETWORK || "sepolia";
 const INTERVAL_MS = (Number(process.env.INTERVAL_HOURS) || 6) * 3600 * 1000;
@@ -33,7 +33,7 @@ const PROMPTS = [
 
 async function main() {
   const dep = loadDeployment(NETWORK);
-  const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com");
+  const provider = makeProvider(NETWORK);
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   const escrow = new ethers.Contract(dep.TaskEscrow, loadAbi("TaskEscrow"), wallet);
   const usdc = new ethers.Contract(dep.USDC, loadAbi("MockUSDC"), wallet);

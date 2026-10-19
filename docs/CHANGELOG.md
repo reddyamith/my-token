@@ -3,6 +3,8 @@
 What shipped, by day. Newest first. Testnet only until the gates in [MAINNET.md](MAINNET.md) close.
 
 ## 2026-10-19
+- Agent and demo client talk to several Sepolia RPC endpoints at once (quorum 1), so one public
+  node going down no longer stalls them. `SEPOLIA_RPC_URLS` adds your own endpoints first.
 - Agent profiles: `writer` and `coder`, each with its own system prompt, on-chain metadata and (for
   the coder) a task matcher. `AGENT_KEY_ENV` lets a second agent run from its own wallet.
   launchd job for the coder.
