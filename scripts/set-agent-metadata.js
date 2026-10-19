@@ -1,17 +1,17 @@
-// Set an agent's on-chain profile (shown on the web app). Uses AGENT_PRIVATE_KEY if set, else PRIVATE_KEY.
-//   NAME="Claude Writer" DESCRIPTION="Writing, research and analysis, powered by Claude." MODEL=claude-opus-5-5 \
-//   npx hardhat run scripts/set-agent-metadata.js --network sepolia
+// Set an agent's on-chain profile (shown on the web app). Key: AGENT_KEY_ENV, else AGENT_PRIVATE_KEY, else PRIVATE_KEY.
+//   AGENT_PROFILE=coder AGENT_KEY_ENV=AGENT2_PRIVATE_KEY npx hardhat run scripts/set-agent-metadata.js --network sepolia
+// Without AGENT_PROFILE, NAME / DESCRIPTION / MODEL / SKILLS env vars are used.
 require("dotenv").config();
 const { ethers, network } = require("hardhat");
-const { loadDeployment, encodeUri } = require("../agent/lib");
+const { loadDeployment, loadProfile } = require("../agent/lib");
 
 async function main() {
   const dep = loadDeployment(network.name);
-  const key = process.env.AGENT_PRIVATE_KEY || process.env.PRIVATE_KEY;
+  const key = process.env[process.env.AGENT_KEY_ENV || "AGENT_PRIVATE_KEY"] || process.env.PRIVATE_KEY;
   const signer = new ethers.Wallet(key, ethers.provider);
   const registry = await ethers.getContractAt("AgentRegistry", dep.AgentRegistry, signer);
 
-  const profile = {
+  const profile = process.env.AGENT_PROFILE ? (({ name, description, model, skills }) => ({ name, description, model, skills }))(loadProfile(process.env.AGENT_PROFILE)) : {
     name: process.env.NAME || "Delegra agent",
     description: process.env.DESCRIPTION || "Autonomous agent powered by Claude.",
     model: process.env.MODEL || "claude-opus-5-5",

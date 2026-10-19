@@ -4,29 +4,31 @@
 //   node agent/agent.js
 //
 // Env (from .env): AGENT_PRIVATE_KEY, else PRIVATE_KEY (agent wallet; must hold DLGR and a little ETH), SEPOLIA_RPC_URL,
-// ANTHROPIC_API_KEY, optional NETWORK (default sepolia), POLL_SECONDS (default 15).
+// ANTHROPIC_API_KEY, optional NETWORK (default sepolia), POLL_SECONDS (default 15),
+// AGENT_PROFILE (default writer; see agent/profiles/), AGENT_KEY_ENV (name of the env var holding
+// this agent's key, so a second agent can run from the same .env with its own wallet).
 require("dotenv").config();
 const { ethers } = require("ethers");
 const Anthropic = require("@anthropic-ai/sdk");
-const { loadDeployment, loadAbi, decodeUri, encodeUri } = require("./lib");
+const { loadDeployment, loadAbi, decodeUri, encodeUri, loadProfile } = require("./lib");
 
 const NETWORK = process.env.NETWORK || "sepolia";
 const POLL_MS = (Number(process.env.POLL_SECONDS) || 15) * 1000;
-const MODEL = process.env.CLAUDE_MODEL || "claude-opus-5-5";
-
-const SYSTEM = `You are a Delegra agent: an autonomous worker hired on-chain to complete one task for a paying client.
-Do exactly what the task asks, completely and carefully, in plain text or Markdown.
-Return only the deliverable. No preamble, no questions back, no commentary about being an AI.`;
+const PROFILE = loadProfile(process.env.AGENT_PROFILE || "writer");
+const MODEL = process.env.CLAUDE_MODEL || PROFILE.model;
+const SYSTEM = PROFILE.system;
 
 async function main() {
   const dep = loadDeployment(NETWORK);
   const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com");
-  const wallet = new ethers.Wallet(process.env.AGENT_PRIVATE_KEY || process.env.PRIVATE_KEY, provider);
+  const keyVar = process.env.AGENT_KEY_ENV || (process.env.AGENT_PRIVATE_KEY ? "AGENT_PRIVATE_KEY" : "PRIVATE_KEY");
+  if (!process.env[keyVar]) throw new Error(`No key in ${keyVar}; set it in .env (never print it).`);
+  const wallet = new ethers.Wallet(process.env[keyVar], provider);
   const escrow = new ethers.Contract(dep.TaskEscrow, loadAbi("TaskEscrow"), wallet);
   const registry = new ethers.Contract(dep.AgentRegistry, loadAbi("AgentRegistry"), wallet);
   const claude = new Anthropic();
 
-  console.log(`Delegra agent ${wallet.address} on ${NETWORK}`);
+  console.log(`Delegra agent "${PROFILE.name}" ${wallet.address} on ${NETWORK}`);
   const me = await registry.getAgent(wallet.address);
   if (!me.active) throw new Error("This wallet is not an active agent. Run scripts/register-agent.js first.");
   console.log(`Active. Free bond: ${ethers.formatUnits(me.freeBond, 18)} DLGR, jobs done: ${me.jobsCompleted}`);
@@ -39,12 +41,17 @@ async function main() {
     seen.add(id);
     const t = await escrow.getTask(id);
     const mine = t.agent.toLowerCase() === wallet.address.toLowerCase();
+    const spec = await decodeUri(t.specURI);
     if (t.status === Status.Accepted && mine) {
       // Accepted in an earlier run but never delivered (e.g. the process was stopped): resume.
       console.log(`\nTask #${id}: already accepted by me, resuming.`);
     } else {
       if (t.status !== Status.Open) return;
       if (t.agent !== ethers.ZeroAddress && !mine) return;
+      if (PROFILE.matcher && !PROFILE.matcher.test(spec)) {
+        console.log(`Task #${id}: not a "${PROFILE.name}" task, leaving it for another agent.`);
+        return;
+      }
       const free = await registry.freeBondOf(wallet.address);
       if (free < t.bondRequired) {
         console.log(`Task #${id}: needs ${ethers.formatUnits(t.bondRequired, 18)} DLGR bond, I have ${ethers.formatUnits(free, 18)} free. Skipping.`);
@@ -54,7 +61,6 @@ async function main() {
       await (await escrow.acceptTask(id)).wait();
     }
 
-    const spec = await decodeUri(t.specURI);
     console.log(`Spec: ${spec.slice(0, 200)}${spec.length > 200 ? "..." : ""}`);
     console.log(`Working with ${MODEL}...`);
 

@@ -7,3 +7,4 @@ deployments/*-localhost.json
 agent.log
 web/deployments/
 demo-client.log
+agent-coder.log

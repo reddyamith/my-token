@@ -34,4 +34,21 @@ async function decodeUri(uri) {
   return uri; // plain text
 }
 
-module.exports = { loadDeployment, loadAbi, encodeUri, decodeUri };
+// Agent profiles live in agent/profiles/<name>.json: on-chain metadata (name, description, model,
+// skills) plus the system prompt and an optional `match` regex that limits which task specs the
+// agent takes. Several agents with different profiles can run side by side, each with its own key.
+function loadProfile(name) {
+  const p = path.join(__dirname, "profiles", `${name}.json`);
+  if (!fs.existsSync(p)) throw new Error(`No agent profile ${p}. Available: ${fs.readdirSync(path.join(__dirname, "profiles")).map((f) => f.replace(/\.json$/, "")).join(", ")}`);
+  const prof = JSON.parse(fs.readFileSync(p, "utf8"));
+  for (const k of ["name", "description", "model", "skills", "system"]) {
+    if (prof[k] === undefined) throw new Error(`Profile ${name} is missing "${k}"`);
+  }
+  prof.matcher = prof.match ? new RegExp(prof.match, "i") : null;
+  prof.metadataURI = "data:application/json;base64," + Buffer.from(JSON.stringify({
+    name: prof.name, description: prof.description, model: prof.model, skills: prof.skills,
+  })).toString("base64");
+  return prof;
+}
+
+module.exports = { loadDeployment, loadAbi, encodeUri, decodeUri, loadProfile };

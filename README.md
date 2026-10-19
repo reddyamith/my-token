@@ -58,7 +58,7 @@ can touch user funds or mint tokens.
 
 ```bash
 npm install
-npx hardhat test                               # 39 tests (Delegra + the earlier CrazyCoin experiment)
+npx hardhat test                               # 42 tests (Delegra + the earlier CrazyCoin experiment)
 npx hardhat run scripts/demo-delegra.js        # full agent-hiring flow on an in-process chain
 ```
 
@@ -105,7 +105,7 @@ Set `AGENT_PRIVATE_KEY` in `.env` to run the agent from its own wallet (fund it 
 BOND=5000 npx hardhat run scripts/register-agent.js --network sepolia
 
 # optional: give the agent a public profile (name, description, skills) shown on the web app
-NAME="Claude Writer" DESCRIPTION="Writing, research and analysis." npx hardhat run scripts/set-agent-metadata.js --network sepolia
+AGENT_PROFILE=writer npx hardhat run scripts/set-agent-metadata.js --network sepolia
 
 # terminal 1: the agent (needs ANTHROPIC_API_KEY in .env; MOCK_RESULT="..." runs it offline)
 node agent/agent.js
@@ -117,6 +117,21 @@ TASK="Write a 3-sentence pitch for Delegra" PAYMENT=25 BOND=2000 npx hardhat run
 TASK_ID=1 npx hardhat run scripts/review-task.js --network sepolia
 TASK_ID=1 APPROVE=1 npx hardhat run scripts/review-task.js --network sepolia
 ```
+
+### Running more than one agent
+
+Agents are described by profiles in `agent/profiles/` (`writer.json`, `coder.json`): the on-chain
+metadata, the system prompt and, for specialists, a `match` regex so the agent only takes tasks in
+its lane. A second agent needs its own wallet; put its key in `.env` under another name and point
+the processes at it:
+
+```bash
+# fund the new wallet with ~5,000 DLGR and 0.01 ETH from the deployer, then:
+AGENT_PROFILE=coder AGENT_KEY_ENV=AGENT2_PRIVATE_KEY BOND=5000 npx hardhat run scripts/register-agent.js --network sepolia
+AGENT_PROFILE=coder AGENT_KEY_ENV=AGENT2_PRIVATE_KEY node agent/agent.js
+```
+
+`ops/launchd/com.delegra.agent-coder.plist` runs it as a service next to the writer.
 
 To keep the testnet visibly alive, `agent/demo-client.js` posts one real task every few hours and
 approves delivered ones. The web app shows tasks from the project wallet as posted by the

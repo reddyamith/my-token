@@ -7,6 +7,7 @@ node at `/opt/homebrew/bin/node`; edit the plists if yours differ.
 | Plist | Runs | Log |
 |---|---|---|
 | `com.delegra.agent.plist` | `node agent/agent.js` | `agent.log` |
+| `com.delegra.agent-coder.plist` | `node agent/agent.js` with `AGENT_PROFILE=coder AGENT_KEY_ENV=AGENT2_PRIVATE_KEY` | `agent-coder.log` |
 | `com.delegra.demo-client.plist` | `node agent/demo-client.js` (INTERVAL_HOURS=6, PAYMENT=5) | `demo-client.log` |
 
 Install and start:
