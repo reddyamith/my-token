@@ -10,7 +10,7 @@ async function main() {
   const key = process.env[process.env.AGENT_KEY_ENV || "AGENT_PRIVATE_KEY"];
   const signer = key ? new ethers.Wallet(key, ethers.provider) : (await ethers.getSigners())[0];
   const metadata = process.env.AGENT_METADATA
-    || (process.env.AGENT_PROFILE ? loadProfile(process.env.AGENT_PROFILE).metadataURI : "data:text/plain,Delegra demo agent powered by Claude");
+    || (process.env.AGENT_PROFILE ? loadProfile(process.env.AGENT_PROFILE).metadataURI : loadProfile("writer").metadataURI);
   const bond = ethers.parseUnits(process.env.BOND || "5000", 18);
   const dlgr = await ethers.getContractAt("DelegraToken", dep.DelegraToken, signer);
   const registry = await ethers.getContractAt("AgentRegistry", dep.AgentRegistry, signer);

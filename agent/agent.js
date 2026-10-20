@@ -1,4 +1,4 @@
-// Delegra demo agent: watches the TaskEscrow for open tasks, accepts them, does the work with
+// Delegra agent: watches the TaskEscrow for open tasks, accepts them, does the work with
 // Claude, and submits the result on-chain so the client can approve and pay.
 //
 //   node agent/agent.js
