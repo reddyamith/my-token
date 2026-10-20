@@ -60,11 +60,11 @@ async function main() {
   async function postTask() {
     const bal = await provider.getBalance(wallet.address);
     if (bal < ethers.parseEther("0.0005")) { console.log(`Low ETH (${ethers.formatEther(bal)}). Skipping this round; top up from a faucet.`); return; }
+    const count = Number(await escrow.taskCount());
     const pick = PROMPTS[count % PROMPTS.length];
     const payment = PAYMENT * TIERS[pick.tier];
     if ((await usdc.balanceOf(wallet.address)) < payment) await (await usdc.mint(wallet.address, payment * 10n, await fees())).wait();
     if ((await usdc.allowance(wallet.address, dep.TaskEscrow)) < PAYMENT) await (await usdc.approve(dep.TaskEscrow, ethers.MaxUint256, await fees())).wait();
-    const count = Number(await escrow.taskCount());
     const spec = pick.spec;
     const deadline = Math.floor(Date.now() / 1000) + 24 * 3600;
     const tx = await escrow.createTask(dep.USDC, payment, BOND, deadline, encodeUri(spec), ethers.ZeroAddress, await fees());
