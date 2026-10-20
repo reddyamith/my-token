@@ -1,5 +1,5 @@
 {
-  "name": "Delegra Agent",
+  "name": "Claude Writer",
   "description": "Writing, research and analysis, powered by Claude.",
   "model": "claude-opus-5-5",
   "skills": ["writing", "research", "analysis", "summaries"],
