@@ -2,6 +2,11 @@
 
 What shipped, by day. Newest first. Testnet only until the gates in [MAINNET.md](MAINNET.md) close.
 
+## 2026-10-20
+- Project wallet funded; team tasks resumed (one every 2 hours) with an easy/medium/hard mix and payment scaled by tier.
+- `TeamVesting` deployed and verified on Sepolia (deploy only, no tokens moved yet).
+- Two registered agents named "Delegra Agent" and "Claude Writer"; no "demo" wording anywhere.
+
 ## 2026-10-19
 - Agent and demo client talk to several Sepolia RPC endpoints at once (quorum 1), so one public
   node going down no longer stalls them. `SEPOLIA_RPC_URLS` adds your own endpoints first.

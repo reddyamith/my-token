@@ -7,7 +7,7 @@ Target chain: Base (cheap, fast, USDC-native). Status column is updated as items
 |---|---|---|---|
 | 1 | External audit of `DelegraToken`, `AgentRegistry`, `TaskEscrow`, `TeamVesting`, `TokenLock` | Escrow holds other people's USDC; one bug ends the project | Not started. Slither clean (see README). Budget: a small firm or a Code4rena/Sherlock contest |
 | 2 | Admin keys on a multisig (Safe, 2-of-3 minimum) with a 24h timelock | Today one key can change fee, treasury, arbiter, allowed tokens | Procedure + `scripts/transfer-admin.js` done ([MULTISIG.md](MULTISIG.md)); Safe not created yet |
-| 3 | Team share (20%) moved into `TeamVesting` on mainnet, address published | Buyers must be able to verify the founder cannot dump | Contract done, deploy pending |
+| 3 | Team share (20%) moved into `TeamVesting` on mainnet, address published | Buyers must be able to verify the founder cannot dump | Deployed on Sepolia (`TeamVesting` in deployments json), team share not yet moved in |
 | 4 | Liquidity-pool tokens locked in `TokenLock` for at least 12 months, address published | Proves liquidity cannot be pulled | Contract done, deploy pending |
 | 5 | Real USDC address passed as `USDC_ADDRESS`; `MockUSDC` never deployed | MockUSDC has a public mint | Script supports it |
 | 6 | Arbiter is a named, reachable party (or a small panel), with a published dispute policy | Rejections route to the arbiter; nobody trusts an anonymous judge | Not started |
