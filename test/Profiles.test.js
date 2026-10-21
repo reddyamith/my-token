@@ -19,7 +19,10 @@ describe("Agent profiles", function () {
     expect(coder.matcher.test("Write a Python script that dedupes a CSV")).to.equal(true);
     expect(coder.matcher.test("Fix the SQL query below")).to.equal(true);
     expect(coder.matcher.test("Write a 200-word product description for a coffee grinder")).to.equal(false);
-    expect(loadProfile("writer").matcher).to.equal(null);
+    const writer = loadProfile("writer");
+    expect(writer.matcher).to.equal(null);
+    expect(writer.avoider.test("Write a bash script that watches an RPC endpoint")).to.equal(true);
+    expect(writer.avoider.test("Write a 200-word product description for a coffee grinder")).to.equal(false);
   });
 
   it("rejects an unknown profile with the list of known ones", function () {

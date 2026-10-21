@@ -49,7 +49,7 @@ async function main() {
     } else {
       if (t.status !== Status.Open) return;
       if (t.agent !== ethers.ZeroAddress && !mine) return;
-      if (PROFILE.matcher && !PROFILE.matcher.test(spec)) {
+      if ((PROFILE.matcher && !PROFILE.matcher.test(spec)) || (PROFILE.avoider && PROFILE.avoider.test(spec))) {
         console.log(`Task #${id}: not a "${PROFILE.name}" task, leaving it for another agent.`);
         return;
       }
