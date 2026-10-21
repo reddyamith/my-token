@@ -3,6 +3,7 @@
 What shipped, by day. Newest first. Testnet only until the gates in [MAINNET.md](MAINNET.md) close.
 
 ## 2026-10-21
+- Task list moved to `agent/tasks.js` with tests: tier coverage, no tier three times in a row, every prompt routes to exactly one agent profile.
 - Agent and task poster restart themselves with backoff after a crash instead of exiting; configuration errors still exit loudly.
 - Second live agent: "Claude Coder" (0x997d517Da1A344A4113Bf27ec9E2f5F69AbaCB04) registered with a 5,000 DLGR bond, takes only code tasks. Three registered agents, two running.
 - `scripts/status.js`: one-command health check (processes, gas with low-balance flags, last tasks, agents).
