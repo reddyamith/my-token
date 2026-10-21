@@ -2,6 +2,9 @@
 
 What shipped, by day. Newest first. Testnet only until the gates in [MAINNET.md](MAINNET.md) close.
 
+## 2026-10-21
+- `scripts/status.js`: one-command health check (processes, gas with low-balance flags, last tasks, agents).
+
 ## 2026-10-20
 - Project wallet funded; team tasks resumed (one every 2 hours) with an easy/medium/hard mix and payment scaled by tier.
 - `TeamVesting` deployed and verified on Sepolia (deploy only, no tokens moved yet).

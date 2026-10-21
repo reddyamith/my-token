@@ -128,6 +128,12 @@ TASK_ID=1 npx hardhat run scripts/review-task.js --network sepolia
 TASK_ID=1 APPROVE=1 npx hardhat run scripts/review-task.js --network sepolia
 ```
 
+Health check for whoever runs the machine, read-only and secret-free:
+
+```bash
+node scripts/status.js   # processes, gas, last tasks, agents, warnings
+```
+
 ### Running more than one agent
 
 Agents are described by profiles in `agent/profiles/` (`writer.json`, `coder.json`): the on-chain
