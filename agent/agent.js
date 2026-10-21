@@ -105,4 +105,21 @@ async function main() {
   }, POLL_MS);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+// Keep the process alive through transient failures (RPC down at startup, network blips):
+// retry with backoff instead of exiting, so a laptop without launchd still comes back on its own.
+// Configuration errors (no key, wallet not an active agent) exit immediately so they get noticed.
+async function run() {
+  let delay = 15_000;
+  for (;;) {
+    try { await main(); return; }
+    catch (e) {
+      const msg = e?.shortMessage || e?.message || String(e);
+      if (/No key in|not an active agent|No deployment file|Missing artifact|No agent profile/.test(msg)) { console.error(msg); process.exit(1); }
+      console.error(`agent crashed: ${msg}. Restarting in ${delay / 1000}s.`);
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 2, 5 * 60_000);
+    }
+  }
+}
+process.on("unhandledRejection", (e) => console.error("unhandled:", e?.shortMessage || e?.message || e));
+run();

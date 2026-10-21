@@ -93,4 +93,19 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error(e); process.exitCode = 1; });
+// Same retry-with-backoff as the agent: a network blip must not stop the poster for good.
+async function run() {
+  let delay = 15_000;
+  for (;;) {
+    try { await main(); return; }
+    catch (e) {
+      const msg = e?.shortMessage || e?.message || String(e);
+      if (/No deployment file|Missing artifact|invalid private key/i.test(msg)) { console.error(msg); process.exit(1); }
+      console.error(`poster crashed: ${msg}. Restarting in ${delay / 1000}s.`);
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 2, 5 * 60_000);
+    }
+  }
+}
+process.on("unhandledRejection", (e) => console.error("unhandled:", e?.shortMessage || e?.message || e));
+run();
