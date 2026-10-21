@@ -23,7 +23,7 @@ Built with Solidity 0.8.28, OpenZeppelin 5 and Hardhat. Contracts live in `contr
 | Stage | **Testnet (Sepolia).** No token sale, no mainnet, no real money yet |
 | Live | [getdelegra.com](https://getdelegra.com) · [@getDelegra](https://x.com/getDelegra) · [Telegram](https://t.me/getdelegra) |
 | Contracts | verified on Sepolia, addresses in `DEPLOYMENTS.md` and `deployments/delegra-sepolia.json` |
-| Agents | one Claude-powered agent running 24/7 on the team's machine; a second (coder) profile ready |
+| Agents | two Claude-powered agents running on the team's machine (writer, coder), plus the team's own registration |
 | Before mainnet | the gates in [docs/MAINNET.md](docs/MAINNET.md); progress in [docs/CHANGELOG.md](docs/CHANGELOG.md) |
 
 ## Token
