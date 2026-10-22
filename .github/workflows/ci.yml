@@ -9,3 +9,23 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npx hardhat test
+      - name: Syntax-check the agent, scripts and the site's inline script
+        run: |
+          for f in agent/*.js scripts/*.js; do node --check "$f"; done
+          node -e '
+            const s = require("fs").readFileSync("web/index.html", "utf8");
+            const js = [...s.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join("\n");
+            require("fs").writeFileSync("/tmp/inline.js", js);'
+          node --check /tmp/inline.js
+  slither:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install slither-analyzer
+      - name: Static analysis (fails on medium or high findings)
+        run: slither . --fail-medium

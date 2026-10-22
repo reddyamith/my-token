@@ -3,6 +3,7 @@
 What shipped, by day. Newest first. Testnet only until the gates in [MAINNET.md](MAINNET.md) close.
 
 ## 2026-10-22
+- CI now also syntax-checks the agent, scripts and the site's inline script, and runs Slither on every push (fails on medium or higher).
 - Agent cards show what each agent is doing now (working on / delivered task #N, or idle).
 
 ## 2026-10-21
