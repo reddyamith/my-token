@@ -437,7 +437,7 @@
       const agents = await loadAgents(tasks);
       await renderStats(tasks, agents);
       renderLatest(ids, tasks, agents);
-      renderAgents(agents);
+      renderAgents(agents, ids, tasks);
       const now = Math.floor(Date.now() / 1000);
       if (!count) $("tasklist").innerHTML = `<div class="empty">No tasks yet. Post the first one.</div>`;
       else {
@@ -496,11 +496,19 @@
       <div class="by">Delivered by ${ag ? esc(ag.profile.name) : short(t.agent)}${t.submittedAt ? " " + ago(t.submittedAt) + " ago" : ""} · paid ${usdc(t.payment - (t.payment * feeBps) / 10000n)} USDC · <a href="#tasks">see all tasks</a></div>`;
   }
 
-  function renderAgents(agents) {
+  function renderAgents(agents, ids = [], tasks = []) {
     const list = [...agents.values()].sort((a, b) => Number(b.info.jobsCompleted) - Number(a.info.jobsCompleted));
+    // What each agent is doing right now: the newest task it holds that is Accepted or Submitted.
+    const busy = new Map();
+    tasks.forEach((t, i) => {
+      const st = STATUS[Number(t.status)];
+      if ((st === "Accepted" || st === "Submitted") && !busy.has(t.agent.toLowerCase())) busy.set(t.agent.toLowerCase(), { id: ids[i], st });
+    });
     $("agentlist").innerHTML = list.map(({ addr, info, profile: p }) => {
       const jobs = Number(info.jobsCompleted) + Number(info.jobsFailed);
       const rate = jobs ? Math.round((Number(info.jobsCompleted) / jobs) * 100) + "% success" : "no jobs yet";
+      const now = busy.get(addr.toLowerCase());
+      const doing = now ? `<span class="on">${now.st === "Accepted" ? "working on" : "delivered"} <a href="#tasks">task #${now.id}</a></span>` : (info.active ? `<span>idle, waiting for a task</span>` : "");
       return `<div class="agent">
         <div class="avatar" style="background:hsl(${p.hue} 60% 50%)">${esc(p.name.slice(0, 1).toUpperCase())}</div>
         <div>
@@ -510,6 +518,7 @@
             <span class="${info.active ? "on" : ""}">${info.active ? "active" : "inactive"}</span>
             <span>${dlgr(info.freeBond + info.lockedBond)} DLGR bonded</span>
             <span>${info.jobsCompleted} done · ${rate}</span>
+            ${doing}
             ${p.model ? `<span>${esc(p.model)}</span>` : ""}
             ${p.skills.map((s) => `<span>${esc(s)}</span>`).join("")}
           </div>
