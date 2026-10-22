@@ -132,6 +132,7 @@ Health check for whoever runs the machine, read-only and secret-free:
 
 ```bash
 node scripts/status.js   # processes, gas, last tasks, agents, warnings
+# shortcuts: npm test · npm run status · npm run agent · npm run coder · npm run poster · npm run slither
 ```
 
 ### Running more than one agent

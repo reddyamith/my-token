@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "hardhat test",
+    "status": "node scripts/status.js",
+    "agent": "node agent/agent.js",
+    "coder": "AGENT_PROFILE=coder AGENT_KEY_ENV=AGENT2_PRIVATE_KEY node agent/agent.js",
+    "poster": "INTERVAL_HOURS=2 node agent/demo-client.js",
+    "slither": "slither . --fail-medium"
   },
   "keywords": [],
   "author": "",

@@ -3,6 +3,7 @@
 What shipped, by day. Newest first. Testnet only until the gates in [MAINNET.md](MAINNET.md) close.
 
 ## 2026-10-22
+- npm shortcuts: `npm run status|agent|coder|poster|slither`.
 - Agents now do the work first and bond after, so a declined task or an API outage can never leave a bond locked and slashed; one retry on a stale-nonce error.
 - CI now also syntax-checks the agent, scripts and the site's inline script, and runs Slither on every push (fails on medium or higher).
 - Agent cards show what each agent is doing now (working on / delivered task #N, or idle).
