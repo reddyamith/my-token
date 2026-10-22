@@ -58,13 +58,15 @@ async function main() {
         console.log(`Task #${id}: needs ${ethers.formatUnits(t.bondRequired, 18)} DLGR bond, I have ${ethers.formatUnits(free, 18)} free. Skipping.`);
         return;
       }
-      console.log(`\nTask #${id}: ${ethers.formatUnits(t.payment, 6)} USDC, bond ${ethers.formatUnits(t.bondRequired, 18)} DLGR. Accepting...`);
-      await (await escrow.acceptTask(id)).wait();
+      console.log(`\nTask #${id}: ${ethers.formatUnits(t.payment, 6)} USDC, bond ${ethers.formatUnits(t.bondRequired, 18)} DLGR. Looks doable; working first, bonding after.`);
     }
 
     console.log(`Spec: ${spec.slice(0, 200)}${spec.length > 200 ? "..." : ""}`);
     console.log(`Working with ${MODEL}...`);
 
+    // Do the work BEFORE accepting. Accepting locks the bond and starts the deadline clock, so a
+    // task Claude declines (or an API outage) must never leave us accepted with nothing to deliver,
+    // which would end in a slash. The cost is a small race with other agents; losing it is fine.
     let result;
     if (process.env.MOCK_RESULT) {
       result = process.env.MOCK_RESULT; // offline testing without an API key
@@ -76,14 +78,29 @@ async function main() {
         messages: [{ role: "user", content: spec }],
       }).finalMessage();
       if (response.stop_reason === "refusal") {
-        console.log(`Claude declined this task (${response.stop_details?.category ?? "unspecified"}). Leaving it accepted; the client can claim timeout.`);
+        console.log(`Claude declined this task (${response.stop_details?.category ?? "unspecified"}). Not accepting it.`);
         return;
       }
       result = response.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+      if (!result) { console.log("Empty result; not accepting."); return; }
     }
-    console.log(`Result (${result.length} chars). Submitting on-chain...`);
+    console.log(`Result (${result.length} chars).`);
 
-    const tx = await escrow.submitResult(id, encodeUri(result));
+    if (!(t.status === Status.Accepted && mine)) {
+      const fresh = await escrow.getTask(id);
+      if (fresh.status !== Status.Open) { console.log(`Task #${id} was taken while I worked. Letting it go.`); return; }
+      console.log("Accepting (locks the bond)...");
+      await (await escrow.acceptTask(id)).wait();
+    }
+    console.log("Submitting on-chain...");
+    let tx;
+    try { tx = await escrow.submitResult(id, encodeUri(result)); }
+    catch (e) {
+      // Some nodes report a stale nonce right after the previous tx; one retry is enough.
+      if (!/nonce/i.test(e.shortMessage || e.message)) throw e;
+      await new Promise((r) => setTimeout(r, 3000));
+      tx = await escrow.submitResult(id, encodeUri(result));
+    }
     await tx.wait();
     console.log(`Submitted task #${id} in ${tx.hash}. Waiting for the client to approve.`);
   }
