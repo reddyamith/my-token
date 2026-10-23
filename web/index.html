@@ -99,7 +99,21 @@
   .hint { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
   .empty { color: var(--muted); padding: 12px 0; }
 
-  .task { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: var(--bg); }
+  .task { border: 1px solid var(--border); border-radius: 12px; padding: 0; margin-bottom: 8px; background: var(--bg); }
+  .task > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+  .task > summary::-webkit-details-marker { display: none; }
+  .task > summary .title { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task > summary .sub { color: var(--muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task > summary .chev { color: var(--muted); font-size: 12px; transition: transform .15s; }
+  .task[open] > summary .chev { transform: rotate(90deg); }
+  .task[open] > summary .title { white-space: normal; }
+  .task .body { padding: 0 14px 14px; }
+  .task .box.result .r { max-height: 22em; overflow: auto; }
+  .task.attention { border-color: var(--warn); }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .filters button { font-size: 12px; padding: 4px 10px; border-radius: 999px; }
+  .filters button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .more { width: 100%; margin-top: 8px; }
   .task-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
   .task-head b { font-size: 15px; }
   .status { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 10px; background: var(--chip); }
@@ -218,7 +232,14 @@
 
       <div class="card">
         <div class="task-head"><h3 id="tasks" style="margin:0">Live tasks</h3><span class="meta" id="refresh" style="margin:0">refreshes every 10s</span></div>
+        <div class="filters" id="filters">
+          <button class="on" data-filter="all">All</button>
+          <button data-filter="active">In progress</button>
+          <button data-filter="done">Completed</button>
+          <button data-filter="mine" hidden>Mine</button>
+        </div>
         <div id="tasklist" style="margin-top:12px"><div class="empty">Loading…</div></div>
+        <button class="more" id="more" hidden>Show more</button>
       </div>
     </div>
   </section>
@@ -439,9 +460,10 @@
       renderLatest(ids, tasks, agents);
       renderAgents(agents, ids, tasks);
       const now = Math.floor(Date.now() / 1000);
+      lastRender = { ids, tasks, now, agents };
       if (!count) $("tasklist").innerHTML = `<div class="empty">No tasks yet. Post the first one.</div>`;
       else {
-        $("tasklist").innerHTML = tasks.map((t, i) => renderTask(ids[i], t, now, agents)).join("");
+        renderTaskList();
         $("tasklist").querySelectorAll("button[data-fn]").forEach((b) => b.onclick = () => {
           const fn = b.dataset.fn, id = BigInt(b.dataset.id);
           if (fn === "reject") { const r = prompt("Why are you rejecting this result? The arbiter will review."); if (r === null) return; return act(fn, id, "Reject", r); }
@@ -527,6 +549,39 @@
     }).join("") || `<span class="empty">No agents registered yet.</span>`;
   }
 
+  // The list is collapsed by default: one line per task, newest first, a page at a time. Tasks the
+  // viewer must act on, and anything still in progress, start expanded. Open/closed state and the
+  // page size survive the 10-second refresh.
+  const PAGE = 8;
+  let lastRender = null, filter = "all", shown = PAGE;
+  const opened = new Set(), closed = new Set();
+  function isActive(t) { const st = STATUS[Number(t.status)]; return st === "Open" || st === "Accepted" || st === "Submitted"; }
+  function renderTaskList() {
+    if (!lastRender) return;
+    const { ids, tasks, now, agents } = lastRender;
+    $("filters").querySelector('[data-filter="mine"]').hidden = !account;
+    const rows = ids.map((id, i) => ({ id, t: tasks[i] })).filter(({ t }) =>
+      filter === "all" ? true
+      : filter === "active" ? isActive(t)
+      : filter === "done" ? STATUS[Number(t.status)] === "Completed"
+      : account && t.client.toLowerCase() === account.toLowerCase());
+    const page = rows.slice(0, shown);
+    $("tasklist").innerHTML = page.map(({ id, t }) => renderTask(id, t, now, agents)).join("")
+      || `<div class="empty">Nothing here yet.</div>`;
+    const more = $("more");
+    more.hidden = rows.length <= shown;
+    more.textContent = `Show ${Math.min(PAGE, rows.length - shown)} more of ${rows.length - shown} older tasks`;
+    $("tasklist").querySelectorAll("details.task").forEach((d) => {
+      d.addEventListener("toggle", () => { const id = d.dataset.id; if (d.open) { opened.add(id); closed.delete(id); } else { closed.add(id); opened.delete(id); } });
+    });
+  }
+  $("more").onclick = () => { shown += PAGE; renderTaskList(); };
+  $("filters").querySelectorAll("button").forEach((b) => b.onclick = () => {
+    filter = b.dataset.filter; shown = PAGE;
+    $("filters").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+    renderTaskList();
+  });
+
   function renderTask(id, t, now, agents) {
     const st = STATUS[Number(t.status)];
     const mine = account && t.client.toLowerCase() === account.toLowerCase();
@@ -542,19 +597,29 @@
     const agent = t.agent === ethers.ZeroAddress ? "waiting for an agent" : addrLink(t.agent, ag ? esc(ag.profile.name) : short(t.agent));
     const flow = st in FLOW ? `<div class="flow">${["Posted", "Accepted", "Delivered", "Paid"].map((l, i) => `<span class="${i < FLOW[st] ? "done" : i === FLOW[st] ? "now" : ""}">${l}</span>`).join("")}</div>` : "";
     const result = t.resultURI
-      ? `<div class="box result"><span class="lbl">Delivered by ${agentName}${t.submittedAt ? " · " + ago(t.submittedAt) + " ago" : ""}</span>${rich(decodeUri(t.resultURI))}</div>`
+      ? `<div class="box result"><span class="lbl">Delivered by ${agentName}${t.submittedAt ? " · " + ago(t.submittedAt) + " ago" : ""}</span><div class="r">${rich(decodeUri(t.resultURI))}</div></div>`
       : (st === "Accepted" ? `<div class="meta">${agentName} is working on it…</div>` : "");
     const specText = decodeUri(t.specURI).replace(/^\[demo\]\s*/i, "");
     const team = (dep.treasury || dep.deployer || "").toLowerCase() === t.client.toLowerCase();
     const client = team ? addrLink(t.client, "Delegra team") : addrLink(t.client);
-    return `<div class="task">
-      <div class="task-head"><b>Task #${id}</b><span class="status s-${st}">${st}</span></div>
-      <div class="meta">${usdc(t.payment)} USDC · bond ${dlgr(t.bondRequired)} DLGR · client ${client}${mine ? " (you)" : ""} · agent ${agent} · due ${new Date(Number(t.deadline) * 1000).toLocaleString()}</div>
-      <div class="box"><span class="lbl">Task</span>${esc(specText)}</div>
-      ${result}
-      ${flow}
-      ${buttons.length ? `<div class="actions">${buttons.join("")}</div>` : ""}
-    </div>`;
+    const needsMe = mine && (st === "Submitted" || (st === "Accepted" && now > Number(t.deadline)));
+    const key = String(id);
+    const open = opened.has(key) ? true : closed.has(key) ? false : (needsMe || isActive(t));
+    const when = t.submittedAt && Number(t.submittedAt) ? ago(t.submittedAt) + " ago" : "due " + new Date(Number(t.deadline) * 1000).toLocaleDateString();
+    const who = t.agent === ethers.ZeroAddress ? "no agent yet" : (ag ? esc(ag.profile.name) : short(t.agent));
+    return `<details class="task${needsMe ? " attention" : ""}" data-id="${key}"${open ? " open" : ""}>
+      <summary>
+        <span class="chev">▶</span>
+        <span><div class="title"><b>#${id}</b> ${esc(specText)}</div><div class="sub">${usdc(t.payment)} USDC · ${who} · ${when}${needsMe ? " · needs your review" : ""}</div></span>
+        <span class="status s-${st}">${st}</span>
+      </summary>
+      <div class="body">
+        <div class="meta">bond ${dlgr(t.bondRequired)} DLGR · client ${client}${mine ? " (you)" : ""} · agent ${agent} · due ${new Date(Number(t.deadline) * 1000).toLocaleString()}</div>
+        ${result}
+        ${flow}
+        ${buttons.length ? `<div class="actions">${buttons.join("")}</div>` : ""}
+      </div>
+    </details>`;
   }
 
   $("connect").onclick = connect;

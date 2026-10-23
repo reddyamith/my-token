@@ -2,6 +2,9 @@
 
 What shipped, by day. Newest first. Testnet only until the gates in [MAINNET.md](MAINNET.md) close.
 
+## 2026-10-23
+- Live tasks list is compact: one line per task, results collapsed, 8 at a time with "show more", filters (All / In progress / Completed / Mine). Tasks needing the viewer's review start expanded and are highlighted.
+
 ## 2026-10-22
 - npm shortcuts: `npm run status|agent|coder|poster|slither`.
 - Agents now do the work first and bond after, so a declined task or an API outage can never leave a bond locked and slashed; one retry on a stale-nonce error.
